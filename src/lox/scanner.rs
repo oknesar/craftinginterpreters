@@ -105,8 +105,7 @@ where
     }
 
     fn identifier(&mut self) {
-        let char = self.char();
-        while char.is_ascii_alphanumeric() || char == b'_' {
+        while self.char().is_ascii_alphanumeric() || self.char() == b'_' {
             self.step();
         }
 
@@ -289,27 +288,31 @@ mod test {
             ("identifier", TokenKind::Identifier),
         ];
 
-        for (code, kind) in variants {
-            let mut lox = Lox { has_error: false };
-            let tokens = Scanner::scan(&mut lox, code);
+        let code = variants
+            .iter()
+            .map(|v| v.0)
+            .collect::<Vec<&str>>()
+            .join(" ");
 
-            assert_eq!(
-                tokens,
-                vec![
-                    Token {
-                        kind,
-                        line: 0,
-                        lexeme: code,
-                    },
-                    Token {
-                        kind: TokenKind::EOF,
-                        line: 0,
-                        lexeme: "",
-                    }
-                ],
-            );
-            assert_eq!(lox.has_error, false);
-        }
+        let mut tokens = variants
+            .iter()
+            .map(|(lexeme, kind)| Token {
+                kind: *kind,
+                line: 0,
+                lexeme,
+            })
+            .collect::<Vec<Token>>();
+
+        tokens.push(Token {
+            kind: TokenKind::EOF,
+            line: 0,
+            lexeme: "",
+        });
+
+        let mut lox = Lox { has_error: false };
+
+        assert_eq!(Scanner::scan(&mut lox, &code), tokens,);
+        assert_eq!(lox.has_error, false);
     }
 
     #[test]

@@ -2,11 +2,11 @@ use crate::lox::token::{Token, TokenKind};
 use crate::lox::Reporter;
 use std::collections::HashMap;
 
-fn is_digit(char: &u8) -> bool {
+fn is_digit(char: u8) -> bool {
     matches!(char, b'0'..=b'9')
 }
 
-fn is_alphanumeric(char: &u8) -> bool {
+fn is_alphanumeric(char: u8) -> bool {
     matches!(char, b'_' | b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z')
 }
 
@@ -92,7 +92,7 @@ where
             b'*' => self.add_token(TokenKind::Star),
             b'/' => {
                 // Maybe comment
-                if self.char_eq(&b'/') {
+                if self.char() == b'/' {
                     self.comment()
                 } else {
                     self.add_token(TokenKind::Slash)
@@ -100,28 +100,28 @@ where
             }
             // One or two character tokens.
             b'!' => {
-                if self.consume_eq(&b'=') {
+                if self.consume_eq(b'=') {
                     self.add_token(TokenKind::BangEqual)
                 } else {
                     self.add_token(TokenKind::Bang)
                 }
             }
             b'=' => {
-                if self.consume_eq(&b'=') {
+                if self.consume_eq(b'=') {
                     self.add_token(TokenKind::EqualEqual)
                 } else {
                     self.add_token(TokenKind::Equal)
                 }
             }
             b'>' => {
-                if self.consume_eq(&b'=') {
+                if self.consume_eq(b'=') {
                     self.add_token(TokenKind::GreaterEqual)
                 } else {
                     self.add_token(TokenKind::Greater)
                 }
             }
             b'<' => {
-                if self.consume_eq(&b'=') {
+                if self.consume_eq(b'=') {
                     self.add_token(TokenKind::LessEqual)
                 } else {
                     self.add_token(TokenKind::Less)
@@ -138,7 +138,7 @@ where
     }
 
     fn literal(&mut self) {
-        while self.is_alphanumeric() {
+        while is_alphanumeric(self.char()) {
             self.step();
         }
 
@@ -151,14 +151,14 @@ where
     }
 
     fn number(&mut self) {
-        while self.is_digit() {
+        while is_digit(self.char()) {
             self.step();
         }
 
-        if self.char_eq(&b'.') && self.next_is_digit() {
+        if self.char() == b'.' && is_digit(self.next_char()) {
             self.step();
             self.step();
-            while self.is_digit() {
+            while is_digit(self.char()) {
                 self.step();
             }
         }
@@ -167,8 +167,8 @@ where
     }
 
     fn string(&mut self) {
-        while !self.done() && !self.char_eq(&b'"') {
-            if self.char_eq(&b'\n') {
+        while !self.done() && self.char() != b'"' {
+            if self.char() == b'\n' {
                 self.line += 1;
             }
             self.step();
@@ -183,7 +183,7 @@ where
     }
 
     fn comment(&mut self) {
-        while !self.done() && !self.char_eq(&b'\n') {
+        while !self.done() && self.char() != b'\n' {
             self.step();
         }
     }
@@ -196,8 +196,8 @@ where
         })
     }
 
-    fn consume_eq(&mut self, char: &u8) -> bool {
-        if self.char_eq(char) {
+    fn consume_eq(&mut self, char: u8) -> bool {
+        if self.char() == char {
             self.step();
             true
         } else {
@@ -205,34 +205,26 @@ where
         }
     }
 
-    fn consume(&mut self) -> &u8 {
-        let char = &self.source_bytes[self.pointer];
+    fn consume(&mut self) -> u8 {
+        let char = self.source_bytes[self.pointer];
         self.step();
         char
     }
 
-    fn is_digit(&self) -> bool {
-        self.char().map_or(false, is_digit)
+    fn char(&self) -> u8 {
+        if self.pointer < self.source_bytes.len() {
+            self.source_bytes[self.pointer]
+        } else {
+            b'\0'
+        }
     }
 
-    fn next_is_digit(&self) -> bool {
-        self.next_char().map_or(false, is_digit)
-    }
-
-    fn is_alphanumeric(&self) -> bool {
-        self.char().map_or(false, is_alphanumeric)
-    }
-
-    fn char_eq(&self, char: &u8) -> bool {
-        self.char().map_or(false, |current| current == char)
-    }
-
-    fn char(&self) -> Option<&u8> {
-        self.source_bytes.get(self.pointer)
-    }
-
-    fn next_char(&self) -> Option<&u8> {
-        self.source_bytes.get(self.pointer + 1)
+    fn next_char(&self) -> u8 {
+        if self.pointer + 1 < self.source_bytes.len() {
+            self.source_bytes[self.pointer + 1]
+        } else {
+            b'\0'
+        }
     }
 
     fn step(&mut self) {

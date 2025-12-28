@@ -231,4 +231,21 @@ mod test {
             );
         }
     }
+
+    #[test]
+    fn comment_only() {
+        let mut lox = Lox { has_error: false };
+        let mut scanner = Scanner::new(&mut lox, "// comment text");
+
+        scanner.scan();
+
+        assert_eq!(
+            scanner.tokens,
+            vec![Token {
+                kind: TokenKind::EOF,
+                line: 0,
+                lexeme: ""
+            }]
+        );
+    }
 }

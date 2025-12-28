@@ -18,8 +18,8 @@ First of all, it’s interesting. As a web developer, I want to learn Rust becau
 
 Follow my progress as I move through the chapters of the book:
 
-*   [ ] **Chapter 4:** Scanning & Lexical Analysis
-*   [ ] **Chapter 5:** Representing Code (AST)
+*   [x] **Chapter 4:** Scanning & Lexical Analysis
+*   [x] **Chapter 5:** Representing Code (AST)
 *   [ ] **Chapter 6:** Parsing Expressions (Recursive Descent)
 *   [ ] **Chapter 7:** Evaluating Expressions
 *   [ ] **Chapter 8:** Statements & State

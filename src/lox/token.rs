@@ -50,6 +50,6 @@ pub enum TokenKind {
 
 pub struct Token<'a> {
     pub kind: TokenKind,
-    pub line: i32,
+    pub line: u32,
     pub lexeme: &'a str,
 }

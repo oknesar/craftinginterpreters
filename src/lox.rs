@@ -1,10 +1,20 @@
+mod scanner;
 mod token;
 
+use crate::lox::scanner::Scanner;
 use std::io::Write;
 use std::{env, fs, io, process};
 
 pub struct Lox {
     has_error: bool,
+}
+
+trait Reporter {
+    fn error(&mut self, line: u32, msg: &str) {
+        self.report(line, "", msg);
+    }
+
+    fn report(&mut self, line: u32, info: &str, msg: &str);
 }
 
 impl Lox {
@@ -45,14 +55,13 @@ impl Lox {
     }
 
     fn run(&mut self, code: &str) {
-        print!("echo: {code}");
+        let mut scanner = Scanner::new(self, code);
+        scanner.scan();
     }
+}
 
-    fn error(&mut self, line: i32, msg: &str) {
-        self.report(line, "", msg);
-    }
-
-    fn report(&mut self, line: i32, info: &str, msg: &str) {
+impl Reporter for Lox {
+    fn report(&mut self, line: u32, info: &str, msg: &str) {
         self.has_error = true;
         println!("[line {line}] Error{info}: {msg}");
     }

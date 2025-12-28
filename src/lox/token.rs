@@ -1,3 +1,4 @@
+#[derive(PartialEq, Debug)]
 pub enum TokenKind {
     // Single-character tokens.
     LeftParen,
@@ -48,6 +49,7 @@ pub enum TokenKind {
     EOF,
 }
 
+#[derive(PartialEq, Debug)]
 pub struct Token<'a> {
     pub kind: TokenKind,
     pub line: u32,

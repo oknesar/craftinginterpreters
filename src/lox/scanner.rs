@@ -36,7 +36,6 @@ impl<'a, R: Reporter> Scanner<'a, R> {
     }
 
     fn parse_token(&mut self) {
-        self.char_consume();
         let char = self.char_consume();
         match char {
             b' ' | b'\t' | b'\r' => (),
@@ -110,10 +109,10 @@ impl<'a, R: Reporter> Scanner<'a, R> {
 
         if self.done() {
             self.reporter.error(self.line, "Unterminated string.");
+        } else {
+            self.step();
+            self.add_token(TokenKind::String);
         }
-
-        self.step(); // consume '"'
-        self.add_token(TokenKind::String);
     }
 
     fn comment(&mut self) {
@@ -146,11 +145,10 @@ impl<'a, R: Reporter> Scanner<'a, R> {
     }
 
     fn char_eq(&self, char: u8) -> bool {
-        *self.char_peak() == char
-    }
-
-    fn char_peak(&self) -> &u8 {
-        &self.source_bytes[self.p]
+        match self.source_bytes.get(self.p) {
+            Some(current_char) => *current_char == char,
+            None => false,
+        }
     }
 
     fn step(&mut self) {
@@ -158,6 +156,79 @@ impl<'a, R: Reporter> Scanner<'a, R> {
     }
 
     fn done(&self) -> bool {
-        return self.p < self.source.len();
+        return self.p >= self.source_bytes.len();
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::lox::token::{Token, TokenKind};
+    use crate::lox::Lox;
+
+    #[test]
+    fn empty_source() {
+        let mut lox = Lox { has_error: false };
+        let mut scanner = Scanner::new(&mut lox, "");
+
+        scanner.scan();
+
+        assert_eq!(
+            scanner.tokens,
+            vec![Token {
+                kind: TokenKind::EOF,
+                line: 0,
+                lexeme: ""
+            }]
+        );
+    }
+
+    #[test]
+    fn base_tokens() {
+        let variants = [
+            ("(", TokenKind::LeftParen),
+            (")", TokenKind::RightParen),
+            ("{", TokenKind::LeftBrace),
+            ("}", TokenKind::RightBrace),
+            (",", TokenKind::Comma),
+            (".", TokenKind::Dot),
+            ("-", TokenKind::Minus),
+            ("+", TokenKind::Plus),
+            (";", TokenKind::Semicolon),
+            ("/", TokenKind::Slash),
+            ("*", TokenKind::Star),
+            ("*", TokenKind::Star),
+            ("!", TokenKind::Bang),
+            ("!=", TokenKind::BangEqual),
+            ("=", TokenKind::Equal),
+            ("==", TokenKind::EqualEqual),
+            (">", TokenKind::Greater),
+            (">=", TokenKind::GreaterEqual),
+            ("<", TokenKind::Less),
+            ("<=", TokenKind::LessEqual),
+            ("\"string\"", TokenKind::String),
+        ];
+
+        for (code, kind) in variants {
+            let mut lox = Lox { has_error: false };
+            let mut scanner = Scanner::new(&mut lox, code);
+            scanner.scan();
+
+            assert_eq!(
+                scanner.tokens,
+                vec![
+                    Token {
+                        kind,
+                        line: 0,
+                        lexeme: code,
+                    },
+                    Token {
+                        kind: TokenKind::EOF,
+                        line: 0,
+                        lexeme: "",
+                    }
+                ],
+            );
+        }
     }
 }

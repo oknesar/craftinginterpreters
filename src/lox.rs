@@ -55,8 +55,7 @@ impl Lox {
     }
 
     fn run(&mut self, code: &str) {
-        let mut scanner = Scanner::new(self, code);
-        scanner.scan();
+        Scanner::scan(self, code);
     }
 }
 

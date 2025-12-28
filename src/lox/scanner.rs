@@ -1,36 +1,5 @@
 use crate::lox::token::{Token, TokenKind};
 use crate::lox::Reporter;
-use std::collections::HashMap;
-
-fn is_digit(char: u8) -> bool {
-    matches!(char, b'0'..=b'9')
-}
-
-fn is_alphanumeric(char: u8) -> bool {
-    matches!(char, b'_' | b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z')
-}
-
-fn keywords() -> HashMap<&'static str, TokenKind> {
-    let mut keywords = HashMap::new();
-    keywords.insert("and", TokenKind::And);
-    keywords.insert("class", TokenKind::Class);
-    keywords.insert("else", TokenKind::Else);
-    keywords.insert("false", TokenKind::False);
-    keywords.insert("fun", TokenKind::Fun);
-    keywords.insert("for", TokenKind::For);
-    keywords.insert("if", TokenKind::If);
-    keywords.insert("nil", TokenKind::Nil);
-    keywords.insert("or", TokenKind::Or);
-    keywords.insert("print", TokenKind::Print);
-    keywords.insert("return", TokenKind::Return);
-    keywords.insert("super", TokenKind::Super);
-    keywords.insert("this", TokenKind::This);
-    keywords.insert("true", TokenKind::True);
-    keywords.insert("var", TokenKind::Var);
-    keywords.insert("while", TokenKind::While);
-
-    keywords
-}
 
 pub struct Scanner<'a, R>
 where
@@ -43,7 +12,6 @@ where
     start: usize,
     pointer: usize,
     line: u32,
-    keywords: HashMap<&'a str, TokenKind>,
 }
 
 impl<'a, R> Scanner<'a, R>
@@ -55,7 +23,6 @@ where
             source,
             source_bytes: source.as_bytes(),
             reporter,
-            keywords: keywords(),
             start: 0,
             pointer: 0,
             line: 0,
@@ -129,7 +96,7 @@ where
             }
             b'"' => self.string(),
             b'0'..=b'9' => self.number(),
-            b'_' | b'a'..=b'z' | b'A'..=b'Z' => self.literal(),
+            b'_' | b'a'..=b'z' | b'A'..=b'Z' => self.identifier(),
             _ => {
                 let msg = format!("Unexpected character '{char}'.");
                 self.reporter.error(self.line, &msg);
@@ -137,28 +104,48 @@ where
         }
     }
 
-    fn literal(&mut self) {
-        while is_alphanumeric(self.char()) {
+    fn identifier(&mut self) {
+        let char = self.char();
+        while char.is_ascii_alphanumeric() || char == b'_' {
             self.step();
         }
 
-        self.add_token(
-            *self
-                .keywords
-                .get(&self.source[self.start..self.pointer])
-                .unwrap_or(&TokenKind::Identifier),
-        )
+        self.add_token(Self::get_identifier_kind(
+            &self.source[self.start..self.pointer],
+        ))
+    }
+
+    fn get_identifier_kind(lexeme: &str) -> TokenKind {
+        match lexeme {
+            "and" => TokenKind::And,
+            "class" => TokenKind::Class,
+            "else" => TokenKind::Else,
+            "false" => TokenKind::False,
+            "fun" => TokenKind::Fun,
+            "for" => TokenKind::For,
+            "if" => TokenKind::If,
+            "nil" => TokenKind::Nil,
+            "or" => TokenKind::Or,
+            "print" => TokenKind::Print,
+            "return" => TokenKind::Return,
+            "super" => TokenKind::Super,
+            "this" => TokenKind::This,
+            "true" => TokenKind::True,
+            "var" => TokenKind::Var,
+            "while" => TokenKind::While,
+            _ => TokenKind::Identifier,
+        }
     }
 
     fn number(&mut self) {
-        while is_digit(self.char()) {
+        while self.char().is_ascii_digit() {
             self.step();
         }
 
-        if self.char() == b'.' && is_digit(self.next_char()) {
+        if self.char() == b'.' && self.next_char().is_ascii_digit() {
             self.step();
             self.step();
-            while is_digit(self.char()) {
+            while self.char().is_ascii_digit() {
                 self.step();
             }
         }
